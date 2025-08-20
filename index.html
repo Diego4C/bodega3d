@@ -16,7 +16,7 @@
     .btn{background:#ffffff14;border:1px solid #ffffff44;color:#fff;border-radius:12px;
          display:flex;align-items:center;justify-content:center;font-weight:600;touch-action:none}
     .btn:active{background:#ffffff28}
-    @media (min-width:900px){ .pad{display:none} } /* en desktop ocultamos los botones */
+    @media (min-width:900px){ .pad{display:none} }
     .overlay{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);
              background:#000c;color:#fff;padding:10px 14px;border-radius:10px;font-size:13px;z-index:20}
     .hide{display:none}
@@ -29,12 +29,12 @@
 
   <div class="hud">Arrastra para mirar · Usa los botones para moverte · <span id="status">Listo</span></div>
 
-  <!-- D-PAD IZQUIERDO: movimiento -->
+  <!-- D-PAD IZQUIERDO -->
   <div class="pad left">
     <div></div>                 <div class="btn" data-act="fwd">▲</div>   <div></div>
     <div class="btn" data-act="left">◀</div> <div class="btn" data-act="back">▼</div> <div class="btn" data-act="right">▶</div>
   </div>
-  <!-- D-PAD DERECHO: acciones -->
+  <!-- D-PAD DERECHO -->
   <div class="pad right">
     <div></div>                 <div class="btn" data-act="jump">⤒</div>  <div></div>
     <div></div>                 <div class="btn" data-act="run">RUN</div> <div></div>
@@ -43,13 +43,17 @@
   <div id="overlay" class="overlay">Cargando modelo… <span id="progress">0%</span></div>
 
   <script>
+    // Tu modelo está en la RAÍZ:
+    const GLB_URL = "https://diego4c.github.io/bodega3d/bodega.glb?v=6";
+
     const canvas = document.getElementById("renderCanvas");
     const engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer:true, stencil:true });
+    BABYLON.Database = undefined; // desactiva cache IndexedDB
+
     const $status = document.getElementById('status');
     const $overlay = document.getElementById('overlay');
     const $progress = document.getElementById('progress');
-
-    const log = (msg)=>{ console.log(msg); $status.textContent = msg; };
+    const log = (m)=>{ console.log(m); $status.textContent = m; };
 
     const createScene = async () => {
       const scene = new BABYLON.Scene(engine);
@@ -57,89 +61,61 @@
       scene.gravity = new BABYLON.Vector3(0, -0.6, 0);
       scene.collisionsEnabled = true;
 
-      // Cámara en primera persona
+      // Cámara 1ª persona
       const cam = new BABYLON.UniversalCamera("cam", new BABYLON.Vector3(0, 1.7, -5), scene);
       cam.attachControl(canvas, true);
-      cam.applyGravity = true;
-      cam.checkCollisions = true;
-      cam.ellipsoid = new BABYLON.Vector3(0.5, 0.9, 0.5); // “cuerpo” del jugador
-      cam.minZ = 0.05;
-      cam.speed = 0.35;             // velocidad caminar
-      cam.inertia = 0.5;
-      cam.angularSensibility = 2500; // sensibilidad mirada
-      // Teclas por si alguien lo abre en PC
-      cam.keysUp.push(87,38);   cam.keysDown.push(83,40);
-      cam.keysLeft.push(65,37); cam.keysRight.push(68,39);
+      cam.applyGravity = true; cam.checkCollisions = true;
+      cam.ellipsoid = new BABYLON.Vector3(0.5, 0.9, 0.5);
+      cam.minZ = 0.05; cam.speed = 0.35; cam.inertia = 0.5; cam.angularSensibility = 2500;
+      cam.keysUp.push(87,38); cam.keysDown.push(83,40); cam.keysLeft.push(65,37); cam.keysRight.push(68,39);
 
-      // Luz
       new BABYLON.HemisphericLight("hemi", new BABYLON.Vector3(0,1,0), scene).intensity = 0.9;
 
-      // Controles táctiles
+      // Botones táctiles
       const state = { fwd:false, back:false, left:false, right:false, run:false, jump:false, canJump:true };
       const set = (k,v)=> state[k]=v;
       document.querySelectorAll('.btn').forEach(b=>{
-        const down = e=>{ set(b.dataset.act,true); e.preventDefault(); };
-        const up   = e=>{ set(b.dataset.act,false); e.preventDefault(); };
+        const down=e=>{ set(b.dataset.act,true); e.preventDefault(); };
+        const up=e=>{ set(b.dataset.act,false); e.preventDefault(); };
         b.addEventListener('touchstart',down,{passive:false});
         b.addEventListener('touchend',up,{passive:false});
-        b.addEventListener('mousedown',down);
-        b.addEventListener('mouseup',up);
-        b.addEventListener('mouseleave',up);
+        b.addEventListener('mousedown',down); b.addEventListener('mouseup',up); b.addEventListener('mouseleave',up);
       });
 
-      // Movimiento por frame
       scene.onBeforeRenderObservable.add(()=>{
         const dt = engine.getDeltaTime()/1000.0;
-        cam.speed = state.run ? 0.8 : 0.35; // correr/caminar
-
-        // Direcciones relativas a la mirada de la cámara
+        cam.speed = state.run ? 0.8 : 0.35;
         const forward = cam.getDirection(new BABYLON.Vector3(0,0,1));
         const right   = cam.getDirection(new BABYLON.Vector3(1,0,0));
-        forward.y = 0; right.y = 0; forward.normalize(); right.normalize();
-
+        forward.y=0; right.y=0; forward.normalize(); right.normalize();
         let move = new BABYLON.Vector3.Zero();
         if (state.fwd)  move.addInPlace(forward);
         if (state.back) move.addInPlace(forward.scale(-1));
         if (state.left) move.addInPlace(right.scale(-1));
         if (state.right)move.addInPlace(right);
-
-        if (move.lengthSquared() > 0){
+        if (move.lengthSquared()>0){
           move = move.normalize().scale(cam.speed);
           cam.cameraDirection.addInPlace(move.scale(dt*60));
         }
-
-        // Salto simple
         if (state.jump && state.canJump){
           cam.cameraDirection.y = 0.35;
-          state.canJump = false;
-          setTimeout(()=> state.canJump=true, 650);
+          state.canJump = false; setTimeout(()=> state.canJump=true, 650);
         }
       });
 
-      // === Carga del modelo desde /assets/ ===
+      // Carga del modelo con URL ABSOLUTA (raíz)
       try {
         log("Cargando modelo…");
-        const result = await BABYLON.SceneLoader.ImportMeshAsync(
-          "",
-          "./assets/",
-          "bodega.glb",
-          scene,
-          (evt)=>{
-            if (evt.lengthComputable) {
-              $progress.textContent = Math.round((evt.loaded/evt.total)*100) + "%";
-            } else {
-              $progress.textContent = Math.round(evt.loaded/1024) + " KB";
-            }
-          }
-        );
-        result.meshes.forEach(m => m.checkCollisions = true); // colisiones globales
-        $overlay.classList.add('hide');
-        log("Modelo cargado");
+        const res = await BABYLON.SceneLoader.ImportMeshAsync("", "", GLB_URL, scene, evt=>{
+          if (evt.lengthComputable) $progress.textContent = Math.round((evt.loaded/evt.total)*100) + "%";
+          else $progress.textContent = Math.round(evt.loaded/1024) + " KB";
+        });
+        res.meshes.forEach(m => m.checkCollisions = true);
+        $overlay.classList.add('hide'); log("Modelo cargado");
       } catch (e) {
-        console.error("Error cargando assets/bodega.glb", e);
-        $overlay.innerHTML = "⚠️ Error cargando <b>assets/bodega.glb</b>";
+        console.error("Error cargando GLB_URL", e);
+        $overlay.innerHTML = "⚠️ Error cargando el modelo en la raíz.<br>Revisa la URL/archivo.";
         log("Error cargando modelo");
-        // Suelo/caja de prueba por si falla el modelo
         BABYLON.MeshBuilder.CreateGround("g",{width:20,height:20},scene);
         const box = BABYLON.MeshBuilder.CreateBox("b",{size:1},scene); box.position.y=0.5;
       }
@@ -147,8 +123,8 @@
       return scene;
     };
 
-    createScene().then(scene => engine.runRenderLoop(() => scene.render()));
-    addEventListener("resize", () => engine.resize());
+    createScene().then(scene => engine.runRenderLoop(()=> scene.render()));
+    addEventListener("resize", ()=> engine.resize());
   </script>
 </body>
 </html>
