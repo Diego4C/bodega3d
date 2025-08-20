@@ -29,10 +29,12 @@
 
   <div class="hud">Arrastra para mirar · Usa los botones para moverte · <span id="status">Listo</span></div>
 
+  <!-- D-PAD IZQUIERDO: movimiento -->
   <div class="pad left">
     <div></div>                 <div class="btn" data-act="fwd">▲</div>   <div></div>
     <div class="btn" data-act="left">◀</div> <div class="btn" data-act="back">▼</div> <div class="btn" data-act="right">▶</div>
   </div>
+  <!-- D-PAD DERECHO: acciones -->
   <div class="pad right">
     <div></div>                 <div class="btn" data-act="jump">⤒</div>  <div></div>
     <div></div>                 <div class="btn" data-act="run">RUN</div> <div></div>
@@ -41,12 +43,13 @@
   <div id="overlay" class="overlay">Cargando modelo… <span id="progress">0%</span></div>
 
   <script>
-    // Usa la URL RAW (con cache-buster ?v=1)
-    const GLB_URL = "https://raw.githubusercontent.com/Diego4C/bodega3d/main/assets/bodega.glb?v=1";
+    // URL ABSOLUTA (Pages) – ya confirmaste que descarga bien
+    const GLB_URL = "https://diego4c.github.io/bodega3d/assets/bodega.glb?v=2";
 
     const canvas = document.getElementById("renderCanvas");
     const engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer:true, stencil:true });
-    BABYLON.Database = undefined; // desactiva cache offline
+    BABYLON.Database = undefined; // desactiva cache offline (IndexedDB)
+
     const $status = document.getElementById('status');
     const $overlay = document.getElementById('overlay');
     const $progress = document.getElementById('progress');
@@ -100,7 +103,7 @@
         }
       });
 
-      // Carga del modelo por URL RAW
+      // Carga del modelo por URL absoluta (Pages)
       try {
         log("Cargando modelo…");
         const res = await BABYLON.SceneLoader.ImportMeshAsync("", "", GLB_URL, scene, evt=>{
@@ -111,8 +114,9 @@
         $overlay.classList.add('hide'); log("Modelo cargado");
       } catch (e) {
         console.error("Error cargando GLB_URL", e);
-        $overlay.innerHTML = "⚠️ Error cargando el modelo (RAW).";
+        $overlay.innerHTML = "⚠️ Error cargando el modelo.<br>Revisa la URL/archivo.";
         log("Error cargando modelo");
+        // fallback visual por si falla
         BABYLON.MeshBuilder.CreateGround("g",{width:20,height:20},scene);
         const box = BABYLON.MeshBuilder.CreateBox("b",{size:1},scene); box.position.y=0.5;
       }
