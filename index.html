@@ -105,7 +105,6 @@
 
         if (move.lengthSquared() > 0){
           move = move.normalize().scale(cam.speed);
-          // mover en la dirección calculada
           cam.cameraDirection.addInPlace(move.scale(dt*60));
         }
 
@@ -117,22 +116,28 @@
         }
       });
 
-      // Carga del modelo con progreso
+      // === Carga del modelo desde /assets/ ===
       try {
         log("Cargando modelo…");
-        const result = await BABYLON.SceneLoader.ImportMeshAsync("", "./", "bodega.glb", scene, (evt)=>{
-          if (evt.lengthComputable) {
-            $progress.textContent = Math.round((evt.loaded/evt.total)*100) + "%";
-          } else {
-            $progress.textContent = Math.round(evt.loaded/1024) + " KB";
+        const result = await BABYLON.SceneLoader.ImportMeshAsync(
+          "",
+          "./assets/",
+          "bodega.glb",
+          scene,
+          (evt)=>{
+            if (evt.lengthComputable) {
+              $progress.textContent = Math.round((evt.loaded/evt.total)*100) + "%";
+            } else {
+              $progress.textContent = Math.round(evt.loaded/1024) + " KB";
+            }
           }
-        });
+        );
         result.meshes.forEach(m => m.checkCollisions = true); // colisiones globales
         $overlay.classList.add('hide');
         log("Modelo cargado");
       } catch (e) {
-        console.error("Error cargando bodega.glb", e);
-        $overlay.innerHTML = "⚠️ Error cargando <b>bodega.glb</b>";
+        console.error("Error cargando assets/bodega.glb", e);
+        $overlay.innerHTML = "⚠️ Error cargando <b>assets/bodega.glb</b>";
         log("Error cargando modelo");
         // Suelo/caja de prueba por si falla el modelo
         BABYLON.MeshBuilder.CreateGround("g",{width:20,height:20},scene);
