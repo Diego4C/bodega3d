@@ -1,55 +1,15 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
-  <title>Bodega 3D</title>
+  <meta charset="UTF-8">
+  <title>Mi Bodega 3D</title>
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
   <style>
-    html,body{width:100%;height:100%;margin:0;background:#111;overflow:hidden}
-    #renderCanvas{width:100%;height:100%;touch-action:none}
+    body { margin: 0; background: #eee; }
+    model-viewer { width: 100vw; height: 100vh; }
   </style>
-  <!-- BabylonJS -->
-  <script src="https://cdn.babylonjs.com/babylon.js"></script>
-  <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
 </head>
 <body>
-  <canvas id="renderCanvas"></canvas>
-  <script>
-    const canvas = document.getElementById("renderCanvas");
-    const engine = new BABYLON.Engine(canvas, true);
-
-    const createScene = async () => {
-      const scene = new BABYLON.Scene(engine);
-
-      // Cámara
-      const camera = new BABYLON.ArcRotateCamera("cam",
-        Math.PI/4, Math.PI/3, 20,
-        BABYLON.Vector3.Zero(), scene);
-      camera.attachControl(canvas, true);
-
-      // Luz
-      new BABYLON.HemisphericLight("light",
-        new BABYLON.Vector3(0,1,0), scene).intensity = 1.2;
-
-      // Suelo de prueba
-      BABYLON.MeshBuilder.CreateGround("ground", {width:50, height:50}, scene);
-
-      // IMPORTA TU MODELO
-      await BABYLON.SceneLoader.ImportMeshAsync(
-        "",
-        "./",
-        "bodega.glb",
-        scene
-      );
-
-      return scene;
-    };
-
-    createScene().then(scene => {
-      engine.runRenderLoop(() => scene.render());
-    });
-
-    window.addEventListener("resize", () => engine.resize());
-  </script>
+  <model-viewer src="bodega.glb" camera-controls auto-rotate ar></model-viewer>
 </body>
 </html>
